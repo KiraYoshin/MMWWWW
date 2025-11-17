@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>GEC004 — 100-Item Quiz (Dark Mode)</title>
+<style>
+ :root{--bg:#0a0f24;--card:#111821;--accent:#1e90ff;--glow:0 0 12px #1e90ff;--text:#e9ecf2;--muted:#9aa3b2;--radius:10px}
+ body{background:var(--bg);color:var(--text);font-family:Segoe UI,Arial,sans-serif;margin:0;padding:28px}
+ .wrap{max-width:1100px;margin:0 auto;background:var(--card);padding:26px;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.6);border:1px solid #232734}
+ h1{color:var(--accent);text-shadow:var(--glow);text-align:center;margin:0 0 6px}
+ .meta{color:var(--muted);text-align:center;margin-bottom:16px}
+ .q{background:#141822;padding:14px;border-radius:10px;margin-bottom:12px;border-left:4px solid var(--accent);transition:.12s}
+ .q:hover{transform:translateX(6px);box-shadow:0 12px 30px rgba(30,144,255,0.06)}
+ .q strong{display:block;margin-bottom:8px}
+ .choices label{display:block;cursor:pointer;padding:6px 0;color:var(--text)}
+ input[type=radio]{transform:scale(1.12);margin-right:8px;accent-color:var(--accent)}
+ .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center}
+ button{background:var(--accent);color:#000;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;box-shadow:var(--glow);font-weight:700}
+ button.secondary{background:#0b1220;color:var(--text);border:1px solid rgba(255,255,255,.04)}
+ #result{margin-top:18px;font-size:20px;color:var(--accent);font-weight:700}
+ #answers{margin-top:14px;background:#0f1724;padding:12px;border-radius:10px;border-left:4px solid #6df6ff;color:var(--muted);display:none}
+ .small{font-size:13px;color:var(--muted);margin-top:8px}
+ @media(max-width:640px){ .wrap{padding:16px} button{width:100%} .controls{flex-direction:column} }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>GEC004 Reviewer — 100 Items</h1>
+    <p class="meta">Derived from your Final GEC004 Handout. Submit locks answers; Show Answer Key displays correct answers. Refresh to retake. :contentReference[oaicite:1]{index=1}</p>
+
+    <form id="quiz"></form>
+
+    <div class="controls">
+      <button id="submitBtn" type="button">Submit Answers</button>
+      <button id="showKeyBtn" type="button" class="secondary">Show Answer Key</button>
+      <div style="flex:1"></div>
+      <div class="small">Refresh page to retake the quiz.</div>
+    </div>
+
+    <div id="result" aria-live="polite"></div>
+    <div id="answers"></div>
+  </div>
+
+<script>
+// ========== QUESTIONS (100 items) ==========
+const questions = [
+{q:"What is a frequency distribution?", choices:["A grouping of data into classes showing frequencies","A type of probability","A regression method","A machine learning model"], correct:0},
+{q:"Which is the easiest way to organize data into categories and counts?", choices:["Histogram","Frequency distribution","Scatter plot","Correlation matrix"], correct:1},
+{q:"Percentage in frequency distribution is computed by f over n times what?", choices:["10","100","1000","1"], correct:1},
+{q:"Grouped frequency distribution is used when:", choices:["Data range is small","Range is large and classes needed","Data is binary","All values are identical"], correct:1},
+{q:"Rule 1 for number of classes uses smallest k such that 2^k ≥ n. This finds:", choices:["Class width","Number of classes","Midpoint","Range"], correct:1},
+{q:"Class interval is (Range) divided by what?", choices:["Number of classes","Sum of frequencies","Mean","Median"], correct:0},
+{q:"Which formula is an alternative for class interval: Range / (1 + 3.322 log n) is called:", choices:["Rule 1","Rule 2","Z-rule","Quartile rule"], correct:1},
+{q:"In grouped tables, midpoint is also called:", choices:["Class mark","Lower bound","Upper bound","Frequency"], correct:0},
+{q:"When building a frequency table, cumulative frequency is:", choices:["Sum of frequencies up to a class","Difference of frequencies","Class midpoint","Mode"], correct:0},
+{q:"What graph displays classes on the x-axis and class frequencies as adjacent bars?", choices:["Histogram","Pie chart","Scatter plot","Line chart"], correct:0},
+{q:"A frequency polygon is made by connecting points plotted at:", choices:["Class midpoints vs frequency","Class limits vs cumulative frequency","Raw data points","Percentiles"], correct:0},
+{q:"What does the range of a data set measure?", choices:["Average value","Difference between highest and lowest values","Spread as variance","Skewness"], correct:1},
+{q:"Weighted mean uses weights (w). The weighted mean formula is sum(w*x) divided by:", choices:["Sum of x","Number of items","Sum of weights","Sum of squares"], correct:2},
+{q:"Mean deviation uses which operation on deviations?", choices:["Sum of squared deviations","Sum of absolute deviations from mean","Sum of raw values","Product of deviations"], correct:1},
+{q:"Quartiles divide a dataset into how many equal parts?", choices:["2","4","10","100"], correct:1},
+{q:"Deciles divide data into how many equal parts?", choices:["4","10","100","2"], correct:1},
+{q:"Percentiles divide data into how many equal parts?", choices:["4","10","100","50"], correct:2},
+{q:"The formula for quartile location Q_k is k(n+1)/4 — this gives the:", choices:["Value directly","Position (index) in ordered data","Midpoint","Frequency"], correct:1},
+{q:"Which measure divides the data into halves?", choices:["Mode","Median","Quartile","Variance"], correct:1},
+{q:"The median of grouped data uses LBM C and cumulative frequencies. LBM C stands for:", choices:["Lower boundary of median class","Left boundary minus constant","Largest bin mean constant","Linear base median constant"], correct:0},
+{q:"Mode of grouped data is estimated using which expression involving D1 and D2?", choices:["LBMC + (D1/(D1+D2)) * i","Median = mean - mode","Mode equals median","Mode is average of class limits"], correct:0},
+{q:"Empirical relation between mean, median, mode approximates mode as:", choices:["3*median - 2*mean","mean - median = mode","mean = median = mode always","median = 3*mode - 2*mean"], correct:0},
+{q:"Sample variance (s^2) uses denominator:", choices:["n","n-1","1","n+1"], correct:1},
+{q:"Standard deviation is the:", choices:["Square of variance","Square root of variance","Median of deviations","Mode of deviations"], correct:1},
+{q:"Which formula gives sample variance for grouped data using f x^2 and (f x)^2?", choices:["s^2 = [Σ f x^2 - (Σ f x)^2 / n] / (n-1)","s^2 = Σ(x-mean)^2","s^2 = mean^2","s^2 = Σ f x / n"], correct:0},
+{q:"Normal distribution is symmetric; mean, median and mode are:", choices:["All equal","All different","Mean is largest","Median is smallest"], correct:0},
+{q:"Area within 1 standard deviation of mean in normal distribution is approximately:", choices:["34%","68%","95%","99.7%"], correct:1},
+{q:"Area within 2 standard deviations is about:", choices:["68%","95%","34%","50%"], correct:1},
+{q:"Z-score converts x into the standard normal by subtracting mean and dividing by:", choices:["variance","standard deviation","median","mode"], correct:1},
+{q:"To find probability for x in an interval using normal distribution, convert to:", choices:["t-score","z-score","p-value","chi-square"], correct:1},
+{q:"Linear programming objective function for maximization has form P = a1 x + b1 y. This function is called the:", choices:["Constraint","Objective function","Feasible region","Slack variable"], correct:1},
+{q:"Feasible region in LP consists of all points that:", choices:["Violate constraints","Satisfy non-negativity and all constraints","Maximize objective automatically","Are negative"], correct:1},
+{q:"Extreme points of feasible region are important because optimum occurs at:", choices:["Interior only","Some extreme point (corner)","Anywhere randomly","At origin always"], correct:1},
+{q:"Graphical method of LP is limited to how many decision variables (easily visualized)?", choices:["1","2","3","Unlimited"], correct:1},
+{q:"Non-negativity constraints restrict variables to be:", choices:["Negative only","Zero or positive","Positive only","Real and negative"], correct:1},
+{q:"Which is a structural constraint?", choices:["Implicit constraint","Limit on resources","Unbounded variable","Feasible solution"], correct:1},
+{q:"In Fibonacci sequence, each term after the first two is:", choices:["Sum of previous two terms","Product of previous two","Difference","Quotient"], correct:0},
+{q:"The Fibonacci sequence starts 1,1,2,3,5,... The ratio of consecutive terms approaches:", choices:["π","e","φ (about 1.618)","0"], correct:2},
+{q:"A golden rectangle relates to Fibonacci and has ratio approximately:", choices:["1.414","1.618","2.718","3.1415"], correct:1},
+{q:"Polygonal numbers (triangular, square) are examples of:", choices:["Sequences with figurative dot patterns","Random sequences","Probability distributions","Matrices"], correct:0},
+{q:"Triangular numbers are given by n(n+1)/2. The 5th triangular number equals:", choices:["10","15","21","5"], correct:1},
+{q:"Square numbers are given by n^2. The 6th square number equals:", choices:["36","30","42","24"], correct:0},
+{q:"A sequence 7,10,13,16,... is arithmetic with common difference:", choices:["2","3","4","7"], correct:1},
+{q:"Arithmetic sequence general term is a_n = a1 + (n-1)d. For 7,10,13,... the 100th term equals:", choices:["7 + 99*3","7 + 99*2","7 + 100*3","7*100"], correct:0},
+{q:"Formula for nth term of arithmetic with a1 and d is:", choices:["a_n = a1 * d^(n-1)","a_n = a1 + (n-1)d","a_n = n*(a1+d)","a_n = a1/n + d"], correct:1},
+{q:"Geometric sequence multiplies by constant ratio r each term; 2,6,18,... has r equal to:", choices:["2","3","6","9"], correct:1},
+{q:"To find the 100th term of a geometric sequence use a1 * r^(n-1). True or false?", choices:["True","False","Only for arithmetic","Only for Fibonacci"], correct:0},
+{q:"Set notation: cardinality n(A) means:", choices:["Number of elements in set A","Sum of elements","Product of elements","Largest element"], correct:0},
+{q:"Empty (null) set contains how many elements?", choices:["1","0","Depends","Infinite"], correct:1},
+{q:"Singleton or unit set contains:", choices:["Exactly one element","No elements","Two elements","Infinite elements"], correct:0},
+{q:"An infinite set is:", choices:["Countable or uncountable where last element cannot be specified","Set with one element","Finite set","Set of decimals only"], correct:0},
+{q:"Cardinal number of A={1..9} is:", choices:["8","9","10","None"], correct:1},
+{q:"Union of sets A and B (A ∪ B) contains:", choices:["Elements in either A or B or both","Only common elements","Only elements in A","Only elements in B"], correct:0},
+{q:"Intersection (A ∩ B) yields:", choices:["Elements common to both A and B","Union","Difference","Complement"], correct:0},
+{q:"Complement of set A contains:", choices:["Elements not in A but in universal set","Elements in A","Intersection with A","Empty set"], correct:0},
+{q:"Ordered pair (x,y) differs from set {x,y} because:", choices:["Order matters in the pair","They are identical","Pairs are always numbers","Sets are ordered"], correct:0},
+{q:"In probability, sample space is:", choices:["Set of all possible outcomes","Single outcome","Probability of event","Expected value"], correct:0},
+{q:"A histogram uses adjacent bars. True or false?", choices:["True","False","Only for categorical data","Only when classes are unequal"], correct:0},
+{q:"Frequency polygon is best constructed by connecting:", choices:["Midpoints with lines","Bar tops of histogram","Pie chart slices","Scatter points"], correct:0},
+{q:"Relative frequency is frequency divided by:", choices:["Total observations","Class width","Midpoint","Variance"], correct:0},
+{q:"Percent frequency is relative frequency times:", choices:["10","100","1000","1"], correct:1},
+{q:"Class boundary adjusts class limits by half the unit to avoid:", choices:["Gaps between classes","Increasing frequencies","Negative values","Changing mean"], correct:0},
+{q:"Midpoint (class mark) equals:", choices:["(Lower limit + Upper limit)/2","Upper limit - lower limit","Frequency/2","Class width"], correct:0},
+{q:"Coded deviation method uses AM (assumed mean) and coded d to simplify:", choices:["Mean computation for grouped data","Median only","Mode only","Histogram"], correct:0},
+{q:"Median class in grouped data is located using cumulative frequency to find:", choices:["n/2 position","Mode position","Mean position","Quartile position"], correct:0},
+{q:"Mode is the value with the:", choices:["Highest frequency","Lowest frequency","Mean frequency","Median frequency"], correct:0},
+{q:"Empirical rule (68-95-99.7) applies to which distribution?", choices:["Normal distribution","Uniform distribution","Binomial with n=1","Random noise only"], correct:0},
+{q:"Z-score for x is (x - mean) divided by standard deviation. This transforms to:", choices:["Standard normal (mean 0 sd 1)","Uniform","Exponential","Binomial"], correct:0},
+{q:"In LP, corner point method requires evaluating objective at:", choices:["Extreme points of feasible region","Random interior points","Only origin","Only constraint lines"], correct:0},
+{q:"An objective to minimize cost C = ax + by is solved similarly to maximization by:", choices:["Checking extreme points","A different method only","Never solvable","Using mean"], correct:0},
+{q:"Feasible solution satisfies:", choices:["All constraints and non-negativity","No constraints","Objective only","Only non-negativity"], correct:0},
+{q:"Unbounded feasible region may lead to:", choices:["No optimal solution (unbounded)","Multiple maxima always","Unique solution always","Negative variance"], correct:0},
+{q:"Which of these is a measure of central tendency?", choices:["Mean","Range","Variance","Skewness"], correct:0},
+{q:"Mean is sensitive to:", choices:["Outliers","Quartiles","Mode only","Noisy labels"], correct:0},
+{q:"Median is robust to:", choices:["Outliers","Frequency only","Mode shifts","Class width"], correct:0},
+{q:"Mode is best for describing:", choices:["Categorical data","Continuous symmetric data only","Variance","Skewness"], correct:0},
+{q:"If sample size n is 50, smallest k for rule 1 (2^k ≥ n) gives k at least:", choices:["5","6","7","8"], correct:2},
+{q:"If data range is HV - LV, range equals:", choices:["HV - LV","HV + LV","HV * LV","HV / LV"], correct:0},
+{q:"Class width i is usually rounded to:", choices:["Nearest convenient number (e.g., integer)","Nearest minute","Always 0.5","Always 10"], correct:0},
+{q:"Cumulative frequency column shows:", choices:["Running total of frequencies","Class midpoints","Relative frequency only","Mean per class"], correct:0},
+{q:"Relative frequency percentage is used to compare classes accounting for:", choices:["Different sample size","Class width","Midpoint","Mode"], correct:0},
+{q:"When constructing histogram, bars are adjacent because data is:", choices:["Continuous or grouped","Categorical only","Ordinal only","Non-numeric"], correct:0},
+{q:"Frequency polygon requires adding a zero-frequency point at the ends to:", choices:["Close the polygon to x-axis","Increase frequencies","Change mean","Alter mode"], correct:0},
+{q:"Mean deviation (uncentered) divides sum of absolute deviations by:", choices:["n","n-1","2n","sqrt(n)"], correct:0},
+{q:"Variance uses squared deviations which gives weight to:", choices:["Large deviations more than small ones","Small deviations only","No deviations","Midpoint only"], correct:0},
+{q:"Standard deviation units are:", choices:["Same as data units","Squared units","Percent","Dimensionless always"], correct:0},
+{q:"If data are normally distributed, probability of being within 3 sd is about:", choices:["99.7%","95%","68%","50%"], correct:0},
+{q:"To compute percentiles, use formula P_k = k(n+1)/100 to find:", choices:["Position index","Value directly","Mean","Mode"], correct:0},
+{q:"Decile D_3 corresponds to which percentile approximately?", choices:["30th percentile","3rd percentile","70th percentile","50th percentile"], correct:0},
+{q:"An observation's standard score (z) helps compare different variables by:", choices:["Standardizing units","Changing mean","Hiding outliers","Changing sample size"], correct:0},
+{q:"In grouped mean using class marks, sum fX divided by n gives:", choices:["Estimated mean","Median","Mode","Range"], correct:0},
+{q:"Assumed mean method simplifies calculations by doing deviations from:", choices:["An assumed class midpoint (AM)","Zero","Mean of means","Median only"], correct:0},
+{q:"If mode class is highest frequency class, D1 = fm - f_{lower} and D2 = fm - f_{upper}, then mode formula uses D1/(D1+D2). This estimates:", choices:["Mode within modal class","Median exact","Mean exact","Range"], correct:0},
+{q:"Empirical formula mean - mode = 3(mean - median) rearranged gives:", choices:["Mode = 3*median - 2*mean","Median=mode","Mean=median","Mode=mean"], correct:0},
+{q:"Sample variance denominator (n-1) corrects for:", choices:["Bias in sample estimate of population variance","Scale of data","Mean value","Range"], correct:0},
+{q:"Probability right of z = 1.15 uses standard normal table to find area to the right; left area approx:", choices:["0.8749 (left), right 0.1251","0.5","0.95","0.68"], correct:0},
+{q:"When converting x to z, if x < mean then z is:", choices:["Negative","Positive","Zero","Undefined"], correct:0},
+{q:"An LP objective with constraints equalities and inequalities may have solution at intersection of:", choices:["Two constraint lines (corner)","Mean and median","Only axes","Modal class"], correct:0},
+{q:"Graphical LP method plots constraints and finds feasible region; corner points are intersections of:", choices:["Constraint boundaries","Frequency polygons","Histograms","Percentiles"], correct:0},
+{q:"A polygonal number that is triangular has nth term given by:", choices:["n(n+1)/2","n^2","2^n","n(n-1)/2"], correct:0},
+{q:"Fibonacci numbers appear in nature (flowers, spirals) and relate to which ratio?", choices:["Golden ratio φ","Euler's number e","Pi","Square root of 2"], correct:0},
+{q:"Numeration systems include ancient systems like:", choices:["Babylonian and hieroglyphs","Only binary","Only decimal","Only hexadecimal"], correct:0},
+{q:"In practice, number of classes for frequency table is between:", choices:["5 and 20","1 and 3","100 and 200","50 and 500"], correct:0},
+{q:"If you have 50 observations, using Rule 1 (2^k ≥ n) gives minimum k of:", choices:["6 (since 2^6=64)","5","7","8"], correct:0},
+{q:"Grouped data midpoint for class 45–53 is:", choices:["49","45","53","98"], correct:0},
+{q:"If class width is 8, class boundaries might be expressed as LB-UB with .5 adjustments to remove:", choices:["Gaps","Frequencies","Midpoint","Mode"], correct:0},
+{q:"Which of the following is NOT a measure of dispersion?", choices:["Mean","Variance","Standard deviation","Range"], correct:0},
+{q:"Mode can be multiple values if data distribution is:", choices:["Multimodal","Uniform","Normal","Skewed left only"], correct:0},
+{q:"Median of an odd-numbered ordered sample is the:", choices:["Middle value","Average of two values","Smallest value","Largest value"], correct:0},
+{q:"Mean of 50 ages using class mark method requires computing fX and summing:", choices:["Σ fX / n","Σ f / X","Σ X / f","Σ f / n"], correct:0},
+{q:"If the normal curve is asymptotic, it means it never:", choices:["Touches the x-axis","Has mean","Is symmetric","Is unimodal"], correct:0}
+];
+
+// ========== BUILD QUIZ ==========
+const quizEl = document.getElementById('quiz');
+
+questions.forEach((item, idx) => {
+  const block = document.createElement('div');
+  block.className = 'q';
+  let inner = `<strong>${idx+1}. ${item.q}</strong><div class="choices">`;
+  item.choices.forEach((ch,i)=> {
+    inner += `<label><input type="radio" name="q${idx}" value="${i}"> ${String.fromCharCode(65+i)}. ${ch}</label>`;
+  });
+  inner += '</div>';
+  block.innerHTML = inner;
+  quizEl.appendChild(block);
+});
+
+// ========== SUBMIT & SHOW KEY ==========
+const submitBtn = document.getElementById('submitBtn');
+const showKeyBtn = document.getElementById('showKeyBtn');
+const resultDiv = document.getElementById('result');
+const answersDiv = document.getElementById('answers');
+
+submitBtn.addEventListener('click', () => {
+  // disable inputs (Google Form style)
+  document.querySelectorAll('input[type="radio"]').forEach(i=> i.disabled = true);
+
+  // compute score
+  let score = 0;
+  questions.forEach((q,i) => {
+    const sel = document.querySelector(`input[name="q${i}"]:checked`);
+    const val = sel ? Number(sel.value) : null;
+    if(val === q.correct) score++;
+  });
+
+  resultDiv.textContent = `Score: ${score} / ${questions.length}`;
+  // hide answersDiv until requested
+  answersDiv.style.display = 'none';
+  answersDiv.innerHTML = '';
+});
+
+showKeyBtn.addEventListener('click', () => {
+  // show full answer key
+  let html = '<h3>Answer Key</h3>';
+  html += '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
+  questions.forEach((q,i) => {
+    const letter = String.fromCharCode(65+q.correct);
+    html += `<div><strong>${i+1}.</strong> ${letter}. ${q.choices[q.correct]}</div>`;
+  });
+  html += '</div>';
+  answersDiv.innerHTML = html;
+  answersDiv.style.display = 'block';
+  // keep inputs disabled
+  document.querySelectorAll('input[type="radio"]').forEach(i=> i.disabled = true);
+});
+</script>
+</body>
+</html>
